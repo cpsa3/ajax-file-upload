@@ -65,31 +65,30 @@
             //do ajax request
             var xhr = new XMLHttpRequest();
 
-            // 进度监听
+            // listen progress event 
             xhr.upload.addEventListener('progress', that.progressFn, false);
-            // 加载监听
-            // xhr.addEventListener('load', loadFoo, false);
-            // 错误监听
-            // xhr.addEventListener('error', errorFoo, false);
 
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        var res;
-                        try {
-                            res = JSON.parse(xhr.responseText);
-                        } catch (e) {
-                            res = xhr.responseText;
-                        }
-                        resolve(res);
-                    } else {
-                        reject({
-                            msg: 'server error',
-                            status: xhr.status
-                        });
+            xhr.onload = function (e) {
+                if (this.status === 200) {
+                    var res;
+                    try {
+                        res = JSON.parse(this.responseText);
+                    } catch (e) {
+                        res = this.responseText;
                     }
+                    resolve(res);
+                } else {
+                    reject({
+                        msg: 'server error',
+                        status: this.status
+                    });
                 }
             };
+
+            xhr.onerror = function (e) {
+                reject(e);
+            };
+
             xhr.open('POST', that.defaults.action, true);
             xhr.send(formData);
         });
