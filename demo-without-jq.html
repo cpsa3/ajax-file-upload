@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>file upload without jquery demo</title>
+    <script type="text/javascript" src="https://www.promisejs.org/polyfills/promise-6.1.0.js"></script>
+    <script type="text/javascript" src="/src/ajax-file-upload-without-jq.js"></script>
+    <script type="text/javascript">
+        document.addEventListener("DOMContentLoaded", function (event) {
+
+            var ajax = new ajaxUpload("myFile", {
+                action: 'upload.php',
+                data: { usage: "Avatar" },
+                maxFileSize: 4000000
+            }, null, function (prog) {
+                var value = ~~((prog.loaded / prog.total) * 100);
+                console.log(prog);
+                document.getElementById("prog").value = value;
+            });
+
+            document.getElementById("upload").onclick = function () {
+                ajax.upload().then(function (value) {
+                    console.log('done', value);
+                }).catch(function (error) {
+                    console.log('error', error);
+                });
+            };
+
+        });
+    </script>
+</head>
+
+<body>
+    <input id="myFile" type="file" multiple></input>
+    <button id="upload">upload</button>
+    <br />
+    <progress id="prog" value="0" min="0" max="100">
+</body>
+
+</html>
