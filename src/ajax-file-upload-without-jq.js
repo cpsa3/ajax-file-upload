@@ -1,5 +1,5 @@
 /**
- * require Promise.js,exif.js
+ * require Promise.js,exif.js,jpeg_encoder_basic.js
  */
 (function (window) {
     window.URL = window.URL || window.webkitURL;
@@ -64,6 +64,7 @@
 
         EXIF.getData(file, function () {
             orientation = EXIF.getTag(this, "Orientation");
+            //alert(orientation);
         });
 
 
@@ -125,6 +126,10 @@
                 base64 = _createBase64(canvas, ctx);
 
                 resolve(dataURItoBlob(base64));
+
+                //canvas.toBlob(function (blob) {
+                //    resolve(blob);
+                //}, "image/jpeg", 0.95);
             };
 
             image.src = URL.createObjectURL(file);
@@ -183,8 +188,18 @@
             action: 'upload.php',
             // Additional data to send
             data: {},
+            errorMsg: {
+                FILE_EMPTY: 'The number of files cannot be empty.',
+                VALIDATION_FAILS: 'Custom validation fails',
+                SIZE_OVER_LIMIT: 'size over limit'
+            }
             // the max file size(B),default 40M
             //maxFileSize: 41943040
+        };
+
+        that.size = {
+            original: null,
+            compressed: null
         };
 
         opts = opts || {};
@@ -214,21 +229,21 @@
         if (files.length < 1) {
             return {
                 status: 0,
-                msg: 'The number of files cannot be empty.'
+                msg: that.defaults.errorMsg.FILE_EMPTY
             };
         }
 
         if (typeof that.checkFn === "function" && !that.checkFn(files[0])) {
             return {
                 status: 0,
-                msg: 'checkFn error'
+                msg: that.defaults.errorMsg.VALIDATION_FAILS
             };
         }
 
         if (that.defaults.maxFileSize && files[0].size > that.defaults.maxFileSize) {
             return {
                 status: 0,
-                msg: 'size over limit'
+                msg: that.defaults.errorMsg.SIZE_OVER_LIMIT
             };
         }
 
@@ -249,7 +264,7 @@
             var verify_res = that._verify();
 
             if (verify_res.status !== 1) {
-                reject(verify_res.msg);
+                reject(new Error(verify_res.msg));
                 return;
             }
 
@@ -276,24 +291,24 @@
                     }
                     resolve(res);
                 } else {
-                    reject({
-                        msg: 'server error',
-                        status: this.status
-                    });
+                    reject(new Error('server error'));
                 }
             };
 
             xhr.onerror = function (e) {
-                reject(e);
+                reject(new Error('xhr error'));
             };
 
             xhr.open('POST', that.defaults.action, true);
 
+            // 上传文件原始大小
+            that.size.original = that.fileInput.files[0].size;
+
             // file to base64 and fix ios picture orientation
             _getBase64(files[0]).then(function (value) {
-                //document.getElementById("base64-container").innerText = value;
                 formData.append(files[0].name, value);
 
+                that.size.compressed = value.size;
                 xhr.send(formData);
             });
         });
